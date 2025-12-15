@@ -37,6 +37,7 @@ value_file='values.local.yaml'
 image_tag='local'
 container_registry='localhost:32000'
 
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h | --help)
@@ -84,12 +85,15 @@ if [[ $build_images ]]; then
   docker-compose -f docker-compose.yml -f docker-compose.override.yml build
 
   # Remove temporary images
-  docker rmi $(docker images -qf "dangling=true")
+  dangling_imgs=$(docker images -qf "dangling=true")
+  if [[ -n "$dangling_imgs" ]]; then
+    docker rmi $dangling_imgs
+  fi
 fi
 
 if [[ $push_images ]]; then
   echo "#################### Pushing images to the container registry ####################"
-  services=(portal-api identity-api communication-api personal-data-api master-data-api graph-gateway)
+  services=(portal-api identity-api communication-api personal-data-api master-data-api gateways)
 
   for service in "${services[@]}"
   do
@@ -105,31 +109,49 @@ if [[ -n $clean ]]; then
   else
     helm uninstall --namespace $namespace $(helm ls -q --namespace $namespace)
     echo "Previous releases deleted"
-    waitsecs=10; while [ $waitsecs -gt 0 ]; do echo -ne "$waitsecs\033[0K\r"; sleep 1; : $((waitsecs--)); done
+    waitsecs=10; while [ $waitsecs -gt 0 ]; do echo "$waitsecs\033[0K\r"; sleep 1; : $((waitsecs--)); done
   fi
 fi
 
-echo "#################### Begin $app_name installation using Helm ####################"
+if [[ -z $skip_infrastructure || -z $skip_service ]]; then
+  echo "#################### Begin $app_name installation using Helm ####################"
+fi
 
 if [[ -z $skip_infrastructure ]]; then
   helm repo add stable https://charts.helm.sh/stable
-  helm repo add bitnami https://charts.bitnami.com/bitnami
-  helm repo add codecentric https://codecentric.github.io/helm-charts
+  #helm repo add bitnami https://charts.bitnami.com/bitnami
+  #helm repo add codecentric https://codecentric.github.io/helm-charts
 
   echo "Installing secret"
   helm upgrade --install --namespace $namespace -f k8s/charts/secret/$value_file secret k8s/charts/secret
+
   echo "Installing pvc"
   helm upgrade --install --namespace $namespace -f k8s/charts/pvc/$value_file pvc k8s/charts/pvc
+
   echo "Install RabbitMQ"
-  helm upgrade --install --namespace $namespace rabbitmq -f k8s/charts/rabbitmq/$value_file bitnami/rabbitmq
+  helm upgrade --install rabbitmq-cluster-operator k8s/charts/rabbitmq-cluster-operator \
+    --namespace rabbitmq-system \
+    --create-namespace
+    # --set image.repository=$CONTAINER_REGISTRY/cluster-operator \
+    # --set image.tag=$IMAGE_TAG
+
+  docker pull rabbitmq:4.1.3-management
+  docker tag rabbitmq:4.1.3-management $container_registry/rabbitmq:4.1.3-management
+  docker push $container_registry/rabbitmq:4.1.3-management
+  helm upgrade --install --namespace $namespace rabbitmq -f k8s/charts/rabbitmq-cluster/$value_file k8s/charts/rabbitmq-cluster
+
+  # helm upgrade --install --namespace $namespace rabbitmq -f k8s/charts/rabbitmq/$value_file bitnami/rabbitmq
+
   # echo "Install mailhog"
   # helm upgrade --install --namespace $namespace mailhog -f k8s/charts/mailhog/$value_file codecentric/mailhog
-  echo "Install postgresql"
-  helm upgrade --install --namespace $namespace postgresql -f k8s/charts/postgresql/$value_file bitnami/postgresql
-  echo "Install redis"
-  helm upgrade --install --namespace $namespace redis -f k8s/charts/redis/$value_file bitnami/redis
 
-  waitsecs=20; while [ $waitsecs -gt 0 ]; do echo -ne "$waitsecs\033[0K\r"; sleep 1; : $((waitsecs--)); done
+  # echo "Install postgresql"
+  # helm upgrade --install --namespace $namespace postgresql -f k8s/charts/postgresql/$value_file bitnamilegacy/postgresql
+
+  # echo "Install redis"
+  # helm upgrade --install --namespace $namespace redis -f k8s/charts/redis/$value_file bitnami/redis
+
+  waitsecs=20; while [ $waitsecs -gt 0 ]; do echo "$waitsecs\033[0K\r"; sleep 1; : $((waitsecs--)); done
 fi
 
 if [[ -z $skip_service ]]; then

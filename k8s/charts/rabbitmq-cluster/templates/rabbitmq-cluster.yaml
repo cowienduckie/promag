@@ -1,0 +1,32 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ .Release.Name }}-rabbitmq
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Release.Name }}-rabbitmq
+spec:
+  replicas: {{ .Values.rabbitmq.replicas }}
+
+  # Image
+  image: {{ .Values.rabbitmq.image.repository }}:{{ .Values.rabbitmq.image.tag }}
+
+  # Pod resources
+  resources:
+{{ toYaml .Values.rabbitmq.resources | indent 4 }}
+
+  # Persistence
+{{- if .Values.rabbitmq.persistence.enabled }}
+  persistence:
+    storageClassName: {{ .Values.rabbitmq.persistence.storageClassName | quote }}
+    storage: {{ .Values.rabbitmq.persistence.storage | quote }}
+{{- end }}
+
+  # RabbitMQ server configuration
+  rabbitmq:
+    additionalConfig: |
+{{ .Values.rabbitmq.additionalConfig | indent 6 }}
+
+  # Service exposure
+  service:
+    type: {{ .Values.rabbitmq.service.type }}

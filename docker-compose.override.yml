@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
     vault:
         ports:
@@ -192,7 +190,7 @@ services:
     #      - IDENTITY_WEB_HOST=${IDENTITY_WEB_HOST:-localhost:5101}
     #      - IDENTITY_WEB_SCHEMA=${IDENTITY_WEB_SCHEMA:-http}
 
-    graph-gateway:
+    gateways:
         ports:
             - '5100:5100'
         environment:
@@ -206,6 +204,8 @@ services:
             - Services__MasterDataService__Url=http://master-data-api:5004
             - Services__IdentityService__Url=http://identity-api:5101
             - Services__IdentityService__GrpcUrl=http://identity-api:15101
+            - Services__PortalService__Url=http://portal-api:5001
+            - Services__PortalService__GrpcUrl=http://portal-api:15001
             - Logging__Seq__Url=http://seq/
             - Logging__Seq__ApiKey=${SEQ_KEY:-}
             - Logging__Seq__Enabled=true
@@ -214,12 +214,12 @@ services:
             - OpenTelemetry__Enabled=true
             - OpenTelemetry__zipkinEndpoint=http://zipkin:9411/api/v2/spans
 
-    web-apigw:
-        volumes:
-            - ./src/Gateways/Envoy/config/web-gateway:/etc/envoy
-        ports:
-            - '5103:80'
-            - '15103:8001'
+#    web-apigw:
+#        volumes:
+#            - ./src/Gateways/Envoy/config/web-gateway:/etc/envoy
+#        ports:
+#            - '5103:80'
+#            - '15103:8001'
 
     service-status:
         ports:
@@ -238,3 +238,5 @@ services:
             - HealthChecksUI__HealthChecks__3__Uri=http://personal-data-api:5003/health
             - HealthChecksUI__HealthChecks__4__Name=master-data-api
             - HealthChecksUI__HealthChecks__4__Uri=http://master-data-api:5004/health
+            - HealthChecksUI__HealthChecks__5__Name=portal-api
+            - HealthChecksUI__HealthChecks__5__Uri=http://portal-api:5001

@@ -1,0 +1,12 @@
+namespace: rabbitmq-system
+
+image:
+  repository: rabbitmqoperator/cluster-operator
+  tag: 2.18.0
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

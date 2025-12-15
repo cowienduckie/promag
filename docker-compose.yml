@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
     vault:
         image: vault:1.13.3
@@ -155,26 +153,27 @@ services:
     #      - identity-api
     #      - web-apigw
 
-    graph-gateway:
-        image: ${REGISTRY:-promag}/graph-gateway:${TAG:-latest}
-        container_name: graph-gateway
+    gateways:
+        image: ${REGISTRY:-promag}/gateways:${TAG:-latest}
+        container_name: gateways
         build:
             context: .
-            dockerfile: src/Gateways/GraphQl.Gateway/Dockerfile
+            dockerfile: src/Gateways/Gateways/Dockerfile
         networks:
             - promag
         depends_on:
             - communication-api
             - personal-data-api
             - master-data-api
+            - portal-api
 
-    web-apigw:
-        image: envoyproxy/envoy:v1.14.1
-        container_name: web-apigw
-        networks:
-            - promag
-        depends_on:
-            - personal-data-api
+#    web-apigw:
+#        image: envoyproxy/envoy:v1.14.1
+#        container_name: web-apigw
+#        networks:
+#            - promag
+#        depends_on:
+#            - personal-data-api
 
     service-status:
         image: ${REGISTRY:-promag}/service-status:${TAG:-latest}
@@ -189,7 +188,8 @@ services:
             - personal-data-api
             - master-data-api
             - identity-api
-            - graph-gateway
+            - gateways
+            - portal-api
 
 volumes:
     postgres-data:
