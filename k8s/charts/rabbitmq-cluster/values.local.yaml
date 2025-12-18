@@ -1,32 +1,20 @@
-namespace: local
-
 rabbitmq:
-  image:
-    repository: localhost:32000/rabbitmq
-    tag: 4.1.3-management
+  image: rabbitmq:4.2.2-management
 
   replicas: 1
 
   persistence:
     enabled: true
-    # existingClaim: rabbitmq-pvc
     storageClassName: standard
-    storage: 1Gi
-    
-  auth:
-    username: promag
-    password: secure-password
+    storage: 5Gi
 
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 100m
+      memory: 128Mi
     limits:
       cpu: 500m
-      memory: 1Gi
-
-  additionalConfig: |-
-    loopback_users.guest = false
+      memory: 512Mi
 
   service:
     type: ClusterIP

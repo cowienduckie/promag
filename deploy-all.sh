@@ -119,7 +119,7 @@ fi
 
 if [[ -z $skip_infrastructure ]]; then
   helm repo add stable https://charts.helm.sh/stable
-  #helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo add bitnami https://charts.bitnami.com/bitnami
   #helm repo add codecentric https://codecentric.github.io/helm-charts
 
   echo "Installing secret"
@@ -132,13 +132,11 @@ if [[ -z $skip_infrastructure ]]; then
   helm upgrade --install rabbitmq-cluster-operator k8s/charts/rabbitmq-cluster-operator \
     --namespace rabbitmq-system \
     --create-namespace
-    # --set image.repository=$CONTAINER_REGISTRY/cluster-operator \
-    # --set image.tag=$IMAGE_TAG
 
-  docker pull rabbitmq:4.1.3-management
-  docker tag rabbitmq:4.1.3-management $container_registry/rabbitmq:4.1.3-management
-  docker push $container_registry/rabbitmq:4.1.3-management
-  helm upgrade --install --namespace $namespace rabbitmq -f k8s/charts/rabbitmq-cluster/$value_file k8s/charts/rabbitmq-cluster
+  # docker pull rabbitmq:4.1.3-management
+  # docker tag rabbitmq:4.1.3-management $container_registry/rabbitmq:4.1.3-management
+  # docker push $container_registry/rabbitmq:4.1.3-management
+  helm upgrade --install --namespace $namespace -f k8s/charts/rabbitmq-cluster/$value_file rabbitmq k8s/charts/rabbitmq-cluster
 
   # helm upgrade --install --namespace $namespace rabbitmq -f k8s/charts/rabbitmq/$value_file bitnami/rabbitmq
 
@@ -146,16 +144,16 @@ if [[ -z $skip_infrastructure ]]; then
   # helm upgrade --install --namespace $namespace mailhog -f k8s/charts/mailhog/$value_file codecentric/mailhog
 
   # echo "Install postgresql"
-  # helm upgrade --install --namespace $namespace postgresql -f k8s/charts/postgresql/$value_file bitnamilegacy/postgresql
+  helm upgrade --install --namespace $namespace postgresql -f k8s/charts/postgresql/$value_file bitnami/postgresql
 
   # echo "Install redis"
-  # helm upgrade --install --namespace $namespace redis -f k8s/charts/redis/$value_file bitnami/redis
+  helm upgrade --install --namespace $namespace redis -f k8s/charts/redis/$value_file bitnami/redis
 
   waitsecs=20; while [ $waitsecs -gt 0 ]; do echo "$waitsecs\033[0K\r"; sleep 1; : $((waitsecs--)); done
 fi
 
 if [[ -z $skip_service ]]; then
-  charts=(communication-api identity-api  master-data-api personal-data-api portal-api  graph-gateway web-apigw)
+  charts=(portal-api identity-api communication-api personal-data-api master-data-api gateways)
 
   for chart in "${charts[@]}"
   do
